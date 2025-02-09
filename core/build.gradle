@@ -13,5 +13,6 @@ tasks.register('runTests', Test) {
   useJUnitPlatform()
   testLogging {
     events "passed", "failed", "skipped"
+    showStandardStreams = true
   }
 }

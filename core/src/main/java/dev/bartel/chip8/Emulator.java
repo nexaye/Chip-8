@@ -1,9 +1,14 @@
 package dev.bartel.chip8;
 
 import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.badlogic.gdx.utils.viewport.FitViewport;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Emulator extends ApplicationAdapter {
@@ -13,18 +18,56 @@ public class Emulator extends ApplicationAdapter {
     private Input input;
     private Sound sound;
 
+    Stage mainStage;
+    Table rootTable;
+    Chip8ScreenActor gameScreenActor;
+
+
+    private Drawable createColorDrawable(Color color) {
+        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pixmap.setColor(color);
+        pixmap.fill();
+
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+        return new TextureRegionDrawable(new TextureRegion(texture));
+    }
+
     @Override
     public void create() {
-        //batch = new SpriteBatch();
-        //image = new Texture("libgdx.png");
+
+        memory = new Memory();
+        display = new Display();
+        sound = new Sound();
+        input = new Input();
+
+        cpu = new Cpu(memory, display, input, sound);
+        mainStage = new Stage(new FitViewport(640,480));
+
+        rootTable = new Table();
+        rootTable.setFillParent(true);
+        rootTable.setBackground(createColorDrawable(Color.DARK_GRAY));
+        rootTable.setName("rootTable");
+
+        gameScreenActor = new Chip8ScreenActor();
+        gameScreenActor.setVideoBuffer(display.getVideoBuffer());
+
+        rootTable.add(gameScreenActor).expand().top();
+
+
+        mainStage.addActor(rootTable);
+//        mainStage.setDebugAll(true);
     }
 
     @Override
     public void render() {
-        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
-        //batch.begin();
-        //batch.draw(image, 140, 210);
-        //batch.end();
+        cpu.cycle();
+        mainStage.draw();
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        mainStage.getViewport().update(width,height,true);
     }
 
     @Override
@@ -33,3 +76,4 @@ public class Emulator extends ApplicationAdapter {
         //image.dispose();
     }
 }
+
