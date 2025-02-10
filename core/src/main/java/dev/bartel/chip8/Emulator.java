@@ -3,7 +3,6 @@ package dev.bartel.chip8;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
@@ -42,7 +41,7 @@ public class Emulator extends ApplicationAdapter {
         input = new Input();
 
         cpu = new Cpu(memory, display, input, sound);
-        mainStage = new Stage(new FitViewport(640,480));
+        mainStage = new Stage(new FitViewport(64*11-1,48*11));
 
         rootTable = new Table();
         rootTable.setFillParent(true);
@@ -72,8 +71,6 @@ public class Emulator extends ApplicationAdapter {
 
     @Override
     public void dispose() {
-        //batch.dispose();
-        //image.dispose();
     }
 }
 

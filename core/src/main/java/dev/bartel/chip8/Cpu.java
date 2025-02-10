@@ -41,8 +41,8 @@ public class Cpu {
     }
 
     private int fetch(){
-        int opcode = this.memory.getInstruction(this.pc);
-        this.pc += 2;
+        int opcode = memory.getInstruction(pc);
+        pc += 2;
         return opcode;
     }
 
@@ -82,8 +82,8 @@ public class Cpu {
                 setIndexRegister(value);
                 break;
             case 0xD000:
-                int vX = opcode & 0x0F00;
-                int vY = opcode & 0x00F0;
+                int vX = (opcode & 0x0F00) >> 8;
+                int vY = (opcode & 0x00F0) >> 4;
                 int nibble = opcode & 0x000F;
                 draw(vX,vY,nibble);
                 break;
@@ -91,38 +91,55 @@ public class Cpu {
     }
 
     private void clearScreen(){
-            var iterator = Arrays.stream(this.display.getVideoBuffer()).iterator();
+            var iterator = Arrays.stream(display.getVideoBuffer()).iterator();
             while(iterator.hasNext())
             {
                 Arrays.fill(iterator.next(), false);
             }
-            this.display.setDrawFlag(true);
+            display.setDrawFlag(true);
     }
 
     private void jump(int addr){
-        this.pc = addr;
+        pc = addr;
     }
 
     private void setRegister(int vX, int value){
-        this.registers[vX] = value;
+        registers[vX] = value;
     }
 
     private void setIndexRegister(int value){
-        this.i = value;
+        i = value;
     }
     private void addIntermediate(int vX, int value){
-        this.registers[vX] += value;
-        if(this.registers[vX] > 255)
-            this.registers[vX] -= 256;
+        registers[vX] += value;
+        if(registers[vX] > 255)
+            registers[vX] -= 256;
     }
 
     private void draw(int vX, int vY, int nibble){
-        int index = this.i;
-        List<Integer> sprite = new ArrayList<Integer>();
-
+        int index = i;
+        int xStartCoordinate = registers[vX] % 64;
+        int yStartCoordinate = registers[vY] % 32;
+        List<Integer> spriteData = new ArrayList<>();
         for(int i = 0; i < nibble; i++){
-            sprite.add(memory.read(index+i));
+            spriteData.add(memory.read(index+i));
         }
+        var videoBuffer = display.getVideoBuffer();
+
+        for(int yOffset = 0; yOffset < nibble; yOffset++){
+            for(int xOffset = 0; xOffset < 8; xOffset++){
+                boolean b = ((spriteData.get(yOffset) >> (7 - xOffset)) & 0x1) == 1;
+
+                boolean temp = videoBuffer[yStartCoordinate + yOffset][xStartCoordinate + xOffset];
+                videoBuffer[yStartCoordinate + yOffset][xStartCoordinate + xOffset] ^= b;
+
+                if(temp != videoBuffer[yStartCoordinate + yOffset][xStartCoordinate + xOffset]){
+                    registers[15] = 0x1;
+                }
+            }
+        }
+
+
     }
 
     private void incrementPC(){

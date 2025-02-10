@@ -1,8 +1,5 @@
 package dev.bartel.chip8;
 
-import java.util.HashMap;
-import java.util.Map;
+public abstract class InstructionSet {
 
-public interface InstructionSet {
-    public Instruction getInstruction(short opcode);
 }

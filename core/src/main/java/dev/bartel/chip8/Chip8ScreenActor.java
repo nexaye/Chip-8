@@ -10,9 +10,9 @@ public class Chip8ScreenActor extends Actor {
     private boolean[][] videoBuffer;
 
     public Chip8ScreenActor(){
-        displayTexture = new Texture(640,320, Pixmap.Format.RGBA8888);
-        this.setWidth(640);
-        this.setHeight(320);
+        displayTexture = new Texture(64*11-1,32*11, Pixmap.Format.RGBA8888);
+        this.setWidth(64*11-1);
+        this.setHeight(32*11);
     }
 
     public void setVideoBuffer(boolean[][] videoBuffer) {
@@ -26,16 +26,16 @@ public class Chip8ScreenActor extends Actor {
     }
 
     private void convertBufferToPixmap(){
-        Pixmap pixmap = new Pixmap(640,320,Pixmap.Format.RGBA8888);
+        Pixmap pixmap = new Pixmap(64*11-1,32*11,Pixmap.Format.RGBA8888);
         for(int y = 0; y<videoBuffer.length;y++){
             for(int x = 0; x<videoBuffer[y].length;x++){
                 if(videoBuffer[y][x]){
                     pixmap.setColor(1,1,1,1);
-                    pixmap.fillRectangle(x*10,y*10,10,10);
+                    pixmap.fillRectangle(x*11,y*11,10,10);
                     continue;
                 }
                 pixmap.setColor(0.15f,0.15f,0.15f,1);
-                pixmap.fillRectangle(x*10,y*10,10,10);
+                pixmap.fillRectangle(x*11,y*11,10,10);
             }
         }
 
