@@ -11,7 +11,7 @@ public class Memory {
     public static final int ROM_START_LOCATION = 0x200;
 
     private final int[] memory = new int[RAM_SIZE_LIMIT];
-    private final Stack<Short> stack = new Stack<>();
+    private final Stack<Integer> stack = new Stack<>();
 
     public Memory(){
         initFont();
@@ -71,15 +71,14 @@ public class Memory {
         return ((highByte << 8) | (lowByte & 0xFF));
     }
 
-    public void pushStack(short address){
+    public void pushStack(int address){
         if(stack.size() >= STACK_SIZE_LIMIT){
             return;
         }
         stack.push(address);
     }
 
-    public short popStack(){
-
+    public int popStack(){
         return stack.pop();
     }
 }

@@ -17,10 +17,10 @@ public class Emulator extends ApplicationAdapter {
     private Input input;
     private Sound sound;
 
-    Stage mainStage;
-    Table rootTable;
-    Chip8ScreenActor gameScreenActor;
-
+    private Stage mainStage;
+    private Table rootTable;
+    private Chip8ScreenActor gameScreenActor;
+    private InstructionSet instructionSet;
 
     private Drawable createColorDrawable(Color color) {
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -39,8 +39,8 @@ public class Emulator extends ApplicationAdapter {
         display = new Display();
         sound = new Sound();
         input = new Input();
-
-        cpu = new Cpu(memory, display, input, sound);
+        instructionSet = new Chip8InstructionSet();
+        cpu = new Cpu(instructionSet,memory, display, input, sound);
         mainStage = new Stage(new FitViewport(64*11-1,48*11));
 
         rootTable = new Table();
@@ -55,12 +55,14 @@ public class Emulator extends ApplicationAdapter {
 
 
         mainStage.addActor(rootTable);
-//        mainStage.setDebugAll(true);
+        //mainStage.setDebugAll(true);
     }
 
     @Override
     public void render() {
-        cpu.cycle();
+        for(int i = 0;i<11;i++){
+            cpu.cycle();
+        }
         mainStage.draw();
     }
 
