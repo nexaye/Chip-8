@@ -45,7 +45,7 @@ public class Memory {
         System.arraycopy(font, 0, this.memory, FONT_START_LOCATION, font.length);
     }
     private void initROM() throws IOException{
-        InputStream inputStream = getClass().getClassLoader().getResourceAsStream("Logo.ch8");
+        InputStream inputStream = getClass().getClassLoader().getResourceAsStream("Clock.ch8");
         if (inputStream == null) throw new IOException("ROM not found");
         byte[] romContent = inputStream.readAllBytes();
         int[] romContent2 = new int[romContent.length];
@@ -55,7 +55,7 @@ public class Memory {
         System.arraycopy(romContent2, 0, this.memory, ROM_START_LOCATION, romContent.length);
     }
 
-    public void write(int addr, byte value) {
+    public void write(int addr, int value) {
         memory[addr] = value;
     }
 

@@ -4,19 +4,17 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.scenes.scene2d.Actor;
+import lombok.Setter;
 
 public class Chip8ScreenActor extends Actor {
     private Texture displayTexture;
+    @Setter
     private boolean[][] videoBuffer;
 
     public Chip8ScreenActor(){
         displayTexture = new Texture(64*11-1,32*11, Pixmap.Format.RGBA8888);
         this.setWidth(64*11-1);
         this.setHeight(32*11);
-    }
-
-    public void setVideoBuffer(boolean[][] videoBuffer) {
-        this.videoBuffer = videoBuffer;
     }
 
     @Override

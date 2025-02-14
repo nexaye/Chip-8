@@ -51,9 +51,15 @@ public class Cpu {
     }
 
     public void cycle(){
-        fetch();
-        decode();
-        execute();
+        if(soundTimer != 0)
+            soundTimer -= 1;
+        if(delayTimer != 0)
+            delayTimer -= 1;
+        for(int i = 0; i<11;i++){
+            fetch();
+            decode();
+            execute();
+        }
     }
 
     private void fetch(){

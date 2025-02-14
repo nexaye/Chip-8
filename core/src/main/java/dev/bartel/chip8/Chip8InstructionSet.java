@@ -1,5 +1,8 @@
 package dev.bartel.chip8;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +32,7 @@ public class Chip8InstructionSet extends InstructionSet {
         //0x00EE - RET | Return from a subroutine
         instructionMap.put(0x000E, (cpu, opcode) -> {
             Memory mem = cpu.getMemory();
-            mem.popStack();
+            cpu.setPc(mem.popStack());
             cpu.decreaseSP();
         });
         //0x1nnn - JP addr | Jump to location nnn
@@ -47,7 +50,7 @@ public class Chip8InstructionSet extends InstructionSet {
         });
         //3xkk - SE Vx, byte | Skip next instruction if Vx = kk
         instructionMap.put(0x3000, (cpu, opcode) -> {
-            int registerX = opcode & 0x0F00;
+            int registerX = (opcode & 0x0F00) >> 8;
             int xValue = cpu.getRegisterValue(registerX);
             int compareValue = opcode & 0x00FF;
 
@@ -137,15 +140,13 @@ public class Chip8InstructionSet extends InstructionSet {
 
             int xValue =  cpu.getRegisterValue(registerX);
             int yValue =  cpu.getRegisterValue(registerY);
+            int flag = 0x0;
             if(xValue + yValue > 255){
                 yValue -= 256;
-                cpu.setRegisterValue(0xF, 0x1);
+                flag = 0x1;
             }
-            else{
-                cpu.setRegisterValue(0xF, 0x0);
-            }
-
             cpu.setRegisterValue(registerX, xValue + yValue);
+            cpu.setRegisterValue(0xF, flag);
         });
 
         //8xy5 - SUB Vx, Vy | Set Vx = Vx - Vy, set VF = NOT borrow
@@ -155,9 +156,11 @@ public class Chip8InstructionSet extends InstructionSet {
 
             int xValue =  cpu.getRegisterValue(registerX);
             int yValue =  cpu.getRegisterValue(registerY);
-            //@todo will not work as an underflow will occur fix later (prob just shift by 28 when xValue > yValue)
-            cpu.setRegisterValue(0xF, xValue > yValue ? 0x1 : 0x0);
-            cpu.setRegisterValue(registerX, xValue - yValue);
+            int flag = xValue >= yValue ? 0x1 : 0x0;
+            int calculatedValue = flag == 0x1 ? xValue -yValue :  (xValue - yValue) + 256;
+
+            cpu.setRegisterValue(registerX, calculatedValue);
+            cpu.setRegisterValue(0xF, flag);
         });
 
         //8xy6 - SHR Vx {, Vy} | Set Vx = Vx SHR 1
@@ -167,8 +170,8 @@ public class Chip8InstructionSet extends InstructionSet {
             int registerY = (opcode & 0x00F0) >> 4;
 
             int yValue = cpu.getRegisterValue(registerY);
-            cpu.setRegisterValue(0xF, yValue & 0x0001);
             cpu.setRegisterValue(registerX, yValue >> 1);
+            cpu.setRegisterValue(0xF, yValue & 0x01);
         });
 
         //8xy7 - SUBN Vx, Vy | Set Vx = Vy - Vx, set VF = NOT borrow
@@ -178,9 +181,11 @@ public class Chip8InstructionSet extends InstructionSet {
 
             int xValue =  cpu.getRegisterValue(registerX);
             int yValue =  cpu.getRegisterValue(registerY);
-            //@todo will not work as an underflow will occur fix later (prob just shift by 28 when yValue > xValue)
-            cpu.setRegisterValue(0xF, yValue > xValue ? 0x1 : 0x0);
-            cpu.setRegisterValue(registerX, yValue - xValue);
+            int borrow = yValue >= xValue ? 0x1 : 0x0;
+            int calculatedValue = borrow == 0x1 ? yValue -xValue :  (yValue - xValue) + 256;
+            //@todo will not work as an underflow will occur fix later (prob just shift by 28 when xValue > yValue)
+            cpu.setRegisterValue(registerX, calculatedValue);
+            cpu.setRegisterValue(0xF, borrow);
         });
 
         //8xyE - SHL Vx {, Vy} | Set Vx = Vx SHL 1
@@ -190,8 +195,8 @@ public class Chip8InstructionSet extends InstructionSet {
             int registerY = (opcode & 0x00F0) >> 4;
 
             int yValue = cpu.getRegisterValue(registerY);
-            cpu.setRegisterValue(0xF, (yValue & 0x8000) >> 15);
-            cpu.setRegisterValue(registerX, yValue << 1);
+            cpu.setRegisterValue(registerX, (yValue << 1) & 0xFF);
+            cpu.setRegisterValue(0xF, yValue >> 7 & 0x01);
         });
 
         //9xy0 - SNE Vx, Vy | Skip next instruction if Vx != Vy
@@ -246,8 +251,11 @@ public class Chip8InstructionSet extends InstructionSet {
                 for(int xOffset = 0; xOffset < 8; xOffset++){
                     //@TODO find fancier way to set v15 (should only be set if on pixel is turned off)
                     boolean currentSpriteBit = ((sprite >> (7 - xOffset)) & 0x1) == 1;
-                    boolean temp = videoBuffer[yStartCoordinate + yOffset][xStartCoordinate + xOffset];
-                    videoBuffer[yStartCoordinate + yOffset][xStartCoordinate + xOffset] ^= currentSpriteBit;
+                    boolean temp= false;
+                    if(yStartCoordinate + yOffset <=31 && xStartCoordinate + xOffset <=63){
+                        temp = videoBuffer[yStartCoordinate + yOffset][xStartCoordinate + xOffset];
+                        videoBuffer[yStartCoordinate + yOffset][xStartCoordinate + xOffset] ^= currentSpriteBit;
+                    }
 
                     if(temp != (temp ^ currentSpriteBit)){
                         cpu.setRegisterValue(0xF, 0x1);
@@ -258,12 +266,12 @@ public class Chip8InstructionSet extends InstructionSet {
         });
         //Ex9E - SKP Vx | Skip next instruction if key with the value of Vx is pressed
         instructionMap.put(0xE09E, (cpu, opcode) -> {
-
+            return;
         });
 
         //ExA1 - SKNP Vx | Skip next instruction if key with the value of Vx is not pressed
         instructionMap.put(0xE0A1, (cpu, opcode) -> {
-
+            return;
         });
 
         //Fx07 - LD Vx, DT | Set Vx = delay timer value
@@ -274,7 +282,14 @@ public class Chip8InstructionSet extends InstructionSet {
         });
 
         //Fx0A - LD Vx, K | Wait for a key press, store the value of the key in Vx
-        instructionMap.put(0xF01A, (cpu, opcode) -> {
+        instructionMap.put(0xF00A, (cpu, opcode) -> {
+            int registerX = (opcode & 0x0F00) >> 8;
+            if(!Gdx.input.isKeyPressed(Input.Keys.A)){
+                cpu.setPc(cpu.getPc()-2);
+            }
+            else{
+                cpu.setRegisterValue(registerX, 10);
+            }
 
         });
 
@@ -302,22 +317,42 @@ public class Chip8InstructionSet extends InstructionSet {
 
         //Fx29 - LD F, Vx | Set I = location of sprite for digit Vx
         instructionMap.put(0xF029, (cpu, opcode) -> {
-
+            return;
         });
 
         //Fx33 - LD B, Vx | Store BCD representation of Vx in memory locations I, I+1, and I+2
         instructionMap.put(0xF033, (cpu, opcode) -> {
+            int registerX = (opcode & 0x0F00) >> 8;
+            int index = cpu.getI();
 
+            int xValue = cpu.getRegisterValue(registerX);
+            Memory mem = cpu.getMemory();
+
+            mem.write(index, (xValue/100) % 10);
+            mem.write(index+1, (xValue/10) % 10);
+            mem.write(index+2, xValue % 10);
         });
 
         //Fx55 - LD [I], Vx | Store registers V0 through Vx in memory starting at location I
         instructionMap.put(0xF055, (cpu, opcode) -> {
-
+            //@todo does not currently modify i
+            int registerX = (opcode & 0x0F00) >> 8;
+            int index = cpu.getI();
+            Memory mem = cpu.getMemory();
+            for(int offset = 0; offset<=registerX; offset++){
+                mem.write(index + offset, cpu.getRegisterValue(offset));
+            }
         });
 
         //Fx65 - LD Vx, [I] | Read registers V0 through Vx from memory starting at location I
         instructionMap.put(0xF065, (cpu, opcode) -> {
-
+            //@todo does not currently modify i
+            int registerX = (opcode & 0x0F00) >> 8;
+            int index = cpu.getI();
+            Memory mem = cpu.getMemory();
+            for(int offset = 0; offset<=registerX; offset++){
+                cpu.setRegisterValue(offset, mem.read(index + offset));
+            }
         });
     }
 }

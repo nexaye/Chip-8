@@ -60,9 +60,7 @@ public class Emulator extends ApplicationAdapter {
 
     @Override
     public void render() {
-        for(int i = 0;i<11;i++){
-            cpu.cycle();
-        }
+        cpu.cycle();
         mainStage.draw();
     }
 
