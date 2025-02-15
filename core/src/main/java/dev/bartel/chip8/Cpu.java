@@ -55,10 +55,12 @@ public class Cpu {
             soundTimer -= 1;
         if(delayTimer != 0)
             delayTimer -= 1;
-        for(int i = 0; i<11;i++){
+        for(int i = 0; i<8;i++){
+            input.setCurrentFrameKeys();
             fetch();
             decode();
             execute();
+            input.setPreviousFrameKeys();
         }
     }
 
@@ -71,7 +73,12 @@ public class Cpu {
     }
 
     private void execute(){
+        try{
         currentInstruction.execute(this, currentOpcode);
+        }catch(NullPointerException e){
+            System.err.println(currentOpcode);
+            System.exit(-1);
+        }
     }
 
     public void setRegisterValue(int register, int value){
@@ -84,5 +91,8 @@ public class Cpu {
     public void decreaseSP(){sp -= 1;}
     public void incrementPC(){
         pc += 2;
+    }
+    public void decrementPC(){
+        pc -= 2;
     }
 }

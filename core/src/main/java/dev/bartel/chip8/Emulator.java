@@ -1,13 +1,17 @@
 package dev.bartel.chip8;
 
 import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+
+import java.io.IOException;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class Emulator extends ApplicationAdapter {
@@ -21,6 +25,8 @@ public class Emulator extends ApplicationAdapter {
     private Table rootTable;
     private Chip8ScreenActor gameScreenActor;
     private InstructionSet instructionSet;
+
+    private int frameCounter = 0;
 
     private Drawable createColorDrawable(Color color) {
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -41,7 +47,7 @@ public class Emulator extends ApplicationAdapter {
         input = new Input();
         instructionSet = new Chip8InstructionSet();
         cpu = new Cpu(instructionSet,memory, display, input, sound);
-        mainStage = new Stage(new FitViewport(64*11-1,48*11));
+        mainStage = new Stage(new FitViewport(64*10,48*10));
 
         rootTable = new Table();
         rootTable.setFillParent(true);
@@ -56,10 +62,13 @@ public class Emulator extends ApplicationAdapter {
 
         mainStage.addActor(rootTable);
         //mainStage.setDebugAll(true);
+        Gdx.input.setInputProcessor(input);
+
     }
 
     @Override
     public void render() {
+        ScreenUtils.clear(0,0,0,1);
         cpu.cycle();
         mainStage.draw();
     }

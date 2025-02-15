@@ -1,1 +1,3 @@
+hs_err_pid4204.log
+hs_err_pid7444.log
 libgdx.png

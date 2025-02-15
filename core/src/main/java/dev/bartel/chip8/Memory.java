@@ -45,7 +45,7 @@ public class Memory {
         System.arraycopy(font, 0, this.memory, FONT_START_LOCATION, font.length);
     }
     private void initROM() throws IOException{
-        InputStream inputStream = getClass().getClassLoader().getResourceAsStream("Clock.ch8");
+        InputStream inputStream = getClass().getClassLoader().getResourceAsStream("5-quirks.ch8");
         if (inputStream == null) throw new IOException("ROM not found");
         byte[] romContent = inputStream.readAllBytes();
         int[] romContent2 = new int[romContent.length];
@@ -68,7 +68,7 @@ public class Memory {
         int lowByte = memory[pc+1];
         //Instruction are 16-Bit and will be composed of the Bytes of memory[pc] and memory[pc+1]
         //Chip-8 uses a big-endian structure MSB come first in memory followed by LSB
-        return ((highByte << 8) | (lowByte & 0xFF));
+        return ((highByte << 8) & 0xFF00 | (lowByte & 0xFF));
     }
 
     public void pushStack(int address){

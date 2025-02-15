@@ -1,11 +1,6 @@
 package dev.bartel.chip8;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
-
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 
 public class Chip8InstructionSet extends InstructionSet {
@@ -239,26 +234,28 @@ public class Chip8InstructionSet extends InstructionSet {
             int vY = (opcode & 0x00F0) >> 4;
             int byteAmount = opcode & 0x000F;
 
-            int xStartCoordinate = cpu.getRegisterValue(vX) % 64;
-            int yStartCoordinate = cpu.getRegisterValue(vY) % 32;
+            int xStartCoordinate = cpu.getRegisterValue(vX) % Display.DISPLAY_WIDTH;
+            int yStartCoordinate = cpu.getRegisterValue(vY) % Display.DISPLAY_HEIGHT;
 
             var videoBuffer = cpu.getDisplay().getVideoBuffer();
 
             cpu.setRegisterValue(0xF, 0x0);
-
             for(int yOffset = 0; yOffset < byteAmount; yOffset++){
                 int sprite = cpu.getMemory().read(cpu.getI()+yOffset);
                 for(int xOffset = 0; xOffset < 8; xOffset++){
-                    //@TODO find fancier way to set v15 (should only be set if on pixel is turned off)
-                    boolean currentSpriteBit = ((sprite >> (7 - xOffset)) & 0x1) == 1;
-                    boolean temp= false;
-                    if(yStartCoordinate + yOffset <=31 && xStartCoordinate + xOffset <=63){
-                        temp = videoBuffer[yStartCoordinate + yOffset][xStartCoordinate + xOffset];
-                        videoBuffer[yStartCoordinate + yOffset][xStartCoordinate + xOffset] ^= currentSpriteBit;
-                    }
+                    int x = (xStartCoordinate + xOffset) % Display.DISPLAY_WIDTH;
+                    int y = (yStartCoordinate + yOffset) % Display.DISPLAY_HEIGHT;
 
-                    if(temp != (temp ^ currentSpriteBit)){
-                        cpu.setRegisterValue(0xF, 0x1);
+                    boolean currentSpriteBit = ((sprite >> (7 - xOffset)) & 0x1) == 1;
+
+                    boolean pixelBefore = videoBuffer[y][x];
+                    videoBuffer[y][x] ^= currentSpriteBit;
+                    boolean pixelAfter = videoBuffer[y][x];
+
+                    if(cpu.getRegisterValue(0xF) == 0x0){
+                        if(pixelBefore && !pixelAfter){
+                            cpu.setRegisterValue(0xF, 0x1);
+                        }
                     }
                 }
             }
@@ -266,12 +263,18 @@ public class Chip8InstructionSet extends InstructionSet {
         });
         //Ex9E - SKP Vx | Skip next instruction if key with the value of Vx is pressed
         instructionMap.put(0xE09E, (cpu, opcode) -> {
-            return;
+            int registerX = (opcode & 0x0F00) >> 8;
+            Input input = cpu.getInput();
+            if(input.isSpecificKeyPressed(cpu.getRegisterValue(registerX)))
+                cpu.incrementPC();
         });
 
         //ExA1 - SKNP Vx | Skip next instruction if key with the value of Vx is not pressed
         instructionMap.put(0xE0A1, (cpu, opcode) -> {
-            return;
+            int registerX = (opcode & 0x0F00) >> 8;
+            Input input = cpu.getInput();
+            if(!input.isSpecificKeyPressed(cpu.getRegisterValue(registerX)))
+                cpu.incrementPC();
         });
 
         //Fx07 - LD Vx, DT | Set Vx = delay timer value
@@ -284,13 +287,19 @@ public class Chip8InstructionSet extends InstructionSet {
         //Fx0A - LD Vx, K | Wait for a key press, store the value of the key in Vx
         instructionMap.put(0xF00A, (cpu, opcode) -> {
             int registerX = (opcode & 0x0F00) >> 8;
-            if(!Gdx.input.isKeyPressed(Input.Keys.A)){
-                cpu.setPc(cpu.getPc()-2);
+            Input input = cpu.getInput();
+            int keyIndex = -1;
+            for(int i = 0; i<16; i++){
+                if(input.checkDifference(i)){
+                    keyIndex = i;
+                    break;
+                }
             }
-            else{
-                cpu.setRegisterValue(registerX, 10);
+            if(keyIndex == -1){
+                cpu.decrementPC();
+                return;
             }
-
+            cpu.setRegisterValue(registerX, keyIndex);
         });
 
         //Fx15 - LD DT, Vx | Set delay timer = Vx
@@ -309,15 +318,17 @@ public class Chip8InstructionSet extends InstructionSet {
 
         //Fx1E - ADD I, Vx | Set I = I + Vx
         instructionMap.put(0xF01E, (cpu, opcode) -> {
-            //@todo overflow protection later
             int registerX = (opcode & 0x0F00) >> 8;
             int xValue = cpu.getRegisterValue(registerX);
+            int i = cpu.getI();
+            xValue = xValue + i > 65535 ? xValue - 65536 : xValue;
             cpu.setI(cpu.getI() + xValue);
         });
 
         //Fx29 - LD F, Vx | Set I = location of sprite for digit Vx
         instructionMap.put(0xF029, (cpu, opcode) -> {
-            return;
+            int registerX = (opcode & 0x0F00) >> 8;
+            cpu.setI(Memory.FONT_START_LOCATION + cpu.getRegisterValue(registerX) * 5);
         });
 
         //Fx33 - LD B, Vx | Store BCD representation of Vx in memory locations I, I+1, and I+2
@@ -335,24 +346,24 @@ public class Chip8InstructionSet extends InstructionSet {
 
         //Fx55 - LD [I], Vx | Store registers V0 through Vx in memory starting at location I
         instructionMap.put(0xF055, (cpu, opcode) -> {
-            //@todo does not currently modify i
             int registerX = (opcode & 0x0F00) >> 8;
             int index = cpu.getI();
             Memory mem = cpu.getMemory();
             for(int offset = 0; offset<=registerX; offset++){
                 mem.write(index + offset, cpu.getRegisterValue(offset));
             }
+            cpu.setI(cpu.getI()+registerX+1);
         });
 
         //Fx65 - LD Vx, [I] | Read registers V0 through Vx from memory starting at location I
         instructionMap.put(0xF065, (cpu, opcode) -> {
-            //@todo does not currently modify i
             int registerX = (opcode & 0x0F00) >> 8;
             int index = cpu.getI();
             Memory mem = cpu.getMemory();
             for(int offset = 0; offset<=registerX; offset++){
                 cpu.setRegisterValue(offset, mem.read(index + offset));
             }
+            cpu.setI(cpu.getI()+registerX+1);
         });
     }
 }
